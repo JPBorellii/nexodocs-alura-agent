@@ -1,0 +1,231 @@
+{
+  "name": "NEXODOCS - WF01R - RETRIEVAL SMOKE TEST",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "d9b1baba-6bc2-4041-bb8a-1bf97cd9a72f",
+      "name": "Executar Smoke Retrieval",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "nexodocs_clinica_horizonte_ch_man_001_v1_0",
+          "mode": "id"
+        },
+        "prompt": "Qual é a tolerância padrão para atraso?",
+        "options": {
+          "contentPayloadKey": "content",
+          "metadataPayloadKey": "metadata"
+        },
+        "topK": 4,
+        "includeDocumentMetadata": true
+      },
+      "id": "3c63aaa9-1e03-48ec-bda6-326f99510353",
+      "name": "Qdrant - Q1 - Atraso 10 Minutos",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        352,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {
+          "dimensions": 3072,
+          "batchSize": 32,
+          "stripNewLines": true,
+          "timeout": -1,
+          "encodingFormat": "float"
+        }
+      },
+      "id": "3c8c6e30-0449-4190-9261-615d3b6b6729",
+      "name": "OpenAI Embeddings - Q1",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        352,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "nexodocs_clinica_horizonte_ch_man_001_v1_0",
+          "mode": "id"
+        },
+        "prompt": "Com quanta antecedência uma consulta deve ser cancelada?",
+        "options": {
+          "contentPayloadKey": "content",
+          "metadataPayloadKey": "metadata"
+        },
+        "topK": 4,
+        "includeDocumentMetadata": true
+      },
+      "id": "caa2086e-844b-4600-9d5c-8d627ab7e563",
+      "name": "Qdrant - Q2 - Cancelamento 24 Horas",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        752,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {
+          "dimensions": 3072,
+          "batchSize": 32,
+          "stripNewLines": true,
+          "timeout": -1,
+          "encodingFormat": "float"
+        }
+      },
+      "id": "49836f17-6e48-427e-9ba9-77afbd0f84e3",
+      "name": "OpenAI Embeddings - Q2",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        752,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "nexodocs_clinica_horizonte_ch_man_001_v1_0",
+          "mode": "id"
+        },
+        "prompt": "Quem é responsável pela proteção de dados?",
+        "options": {
+          "contentPayloadKey": "content",
+          "metadataPayloadKey": "metadata"
+        },
+        "topK": 4,
+        "includeDocumentMetadata": true
+      },
+      "id": "9ccc20ef-cdfb-44ae-86c1-ea9c78bb5d31",
+      "name": "Qdrant - Q3 - Protecao de Dados",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        1152,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {
+          "dimensions": 3072,
+          "batchSize": 32,
+          "stripNewLines": true,
+          "timeout": -1,
+          "encodingFormat": "float"
+        }
+      },
+      "id": "74e54d2b-6cd9-44c5-9b8e-fac9f995d1d8",
+      "name": "OpenAI Embeddings - Q3",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1152,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## NexoDocs — WF-01R Retrieval Smoke Test\n\nExecuta **3 buscas vetoriais isoladas**, sem AI Agent e sem geração de resposta.\n\n**Collection:** `nexodocs_clinica_horizonte_ch_man_001_v1_0`\n\n**Top-K:** 4 por pergunta\n\n**Esperados:**\n1. atraso → `10 minutos`\n2. cancelamento → `24 horas`\n3. proteção de dados → `Camila Ribeiro`\n\n**Configuração:** use a mesma credencial Qdrant local e a mesma credencial OpenAI em todos os subnodes correspondentes.\n\nO workflow não contém segredos.",
+        "height": 360,
+        "width": 560,
+        "color": 7
+      },
+      "id": "5446b5fd-b989-4fa2-a9f3-2875747353de",
+      "name": "README - WF01R",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Executar Smoke Retrieval": {
+      "main": [
+        [
+          {
+            "node": "Qdrant - Q1 - Atraso 10 Minutos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Qdrant - Q2 - Cancelamento 24 Horas",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Qdrant - Q3 - Protecao de Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings - Q1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant - Q1 - Atraso 10 Minutos",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings - Q2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant - Q2 - Cancelamento 24 Horas",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings - Q3": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant - Q3 - Protecao de Dados",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": [],
+  "tags": []
+}
