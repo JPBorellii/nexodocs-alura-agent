@@ -36,6 +36,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.pdfgen import canvas as pdf_canvas
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
 
@@ -54,6 +55,14 @@ FORBIDDEN_TEXT_MARKERS = (
     "mailto:",
     "](",
 )
+
+
+class DeterministicCanvas(pdf_canvas.Canvas):
+    """Create byte-for-byte reproducible PDFs for the same source content."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs["invariant"] = 1
+        super().__init__(*args, **kwargs)
 
 
 def normalize_text(text: str) -> str:
@@ -405,6 +414,7 @@ def build_pdf(input_path: Path, output_path: Path) -> None:
         markdown_to_story(markdown_text),
         onFirstPage=add_header_footer,
         onLaterPages=add_header_footer,
+        canvasmaker=DeterministicCanvas,
     )
 
     validate_pdf(output_path)
