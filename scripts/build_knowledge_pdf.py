@@ -1,17 +1,25 @@
 #!/usr/bin/env python3
 """
-Build a searchable, professional PDF from the NexoDocs corporate knowledge-base Markdown.
+Build and validate a searchable PDF from the NexoDocs corporate knowledge-base Markdown.
 
 Usage:
     py scripts\build_knowledge_pdf.py
-or:
-    python scripts/build_knowledge_pdf.py
 
 Default input:
     knowledge-base/manual_corporativo_clinica_horizonte_v1.0.md
 
 Default output:
     knowledge-base/manual_corporativo_clinica_horizonte_v1.0.pdf
+
+The builder intentionally supports the Markdown subset used by the project:
+- H1/H2/H3 headings
+- bold and italic text
+- unordered lists using "-", "*" or "+"
+- Markdown links, including mailto links
+- front-matter-style bold metadata labels
+- paragraphs and blockquotes
+
+After generation, the PDF is automatically validated with pypdf.
 """
 
 from __future__ import annotations
@@ -21,31 +29,38 @@ import html
 import re
 from pathlib import Path
 
+from pypdf import PdfReader
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
-from reportlab.platypus import (
-    KeepTogether,
-    PageBreak,
-    Paragraph,
-    SimpleDocTemplate,
-    Spacer,
-)
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
 
 DOC_ID = "CH-MAN-001"
 DOC_VERSION = "1.0"
-DOC_SHORT_NAME = "Manual Corporativo - Clinica Horizonte"
+DOC_SHORT_NAME = "Manual Corporativo - Clínica Horizonte"
+
+REQUIRED_TEXT_MARKERS = (
+    "10 minutos",
+    "24 horas",
+    "Camila Ribeiro",
+    "Regra de fonte de verdade",
+)
+
+FORBIDDEN_TEXT_MARKERS = (
+    "mailto:",
+    "](",
+)
 
 
 def normalize_text(text: str) -> str:
-    """Normalize a few Markdown/Unicode characters for reliable PDF rendering."""
+    """Normalize punctuation that can cause inconsistent PDF rendering."""
     replacements = {
-        "\u2013": "-",   # en dash
-        "\u2014": "-",   # em dash
+        "\u2013": "-",  # en dash
+        "\u2014": "-",  # em dash
         "\u2018": "'",
         "\u2019": "'",
         "\u201c": '"',
@@ -58,18 +73,35 @@ def normalize_text(text: str) -> str:
 
 
 def inline_markdown(text: str) -> str:
-    """Convert a minimal, safe Markdown subset into ReportLab Paragraph markup."""
+    """Convert the project's inline Markdown subset to ReportLab Paragraph markup."""
     text = normalize_text(text)
+
+    # Protect Markdown links before HTML escaping.
+    protected_links: list[tuple[str, str]] = []
+
+    def protect_link(match: re.Match[str]) -> str:
+        label = html.escape(match.group(1))
+        url = html.escape(match.group(2), quote=True)
+        token = f"@@NEXODOCS_LINK_{len(protected_links)}@@"
+        markup = f'<link href="{url}" color="#1D4ED8">{label}</link>'
+        protected_links.append((token, markup))
+        return token
+
+    text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", protect_link, text)
+
+    # Escape user/source content before adding allowed ReportLab markup.
     text = html.escape(text)
 
-    # Inline code first so later substitutions do not touch it.
+    # Inline code.
     text = re.sub(r"`([^`]+)`", r'<font name="Courier">\1</font>', text)
 
-    # Bold.
+    # Bold before italic.
     text = re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", text)
-
-    # Italic (minimal support).
     text = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", r"<i>\1</i>", text)
+
+    # Restore protected links as ReportLab markup.
+    for token, markup in protected_links:
+        text = text.replace(token, markup)
 
     return text
 
@@ -85,7 +117,7 @@ def build_styles():
             fontSize=22,
             leading=27,
             alignment=TA_CENTER,
-            spaceAfter=7 * mm,
+            spaceAfter=3 * mm,
             textColor=colors.HexColor("#15233C"),
         )
     )
@@ -93,12 +125,12 @@ def build_styles():
         ParagraphStyle(
             name="NexoSubtitle",
             parent=styles["Normal"],
-            fontName="Helvetica",
-            fontSize=11,
-            leading=15,
+            fontName="Helvetica-Bold",
+            fontSize=12,
+            leading=16,
             alignment=TA_CENTER,
-            spaceAfter=4 * mm,
-            textColor=colors.HexColor("#4B5563"),
+            spaceAfter=5 * mm,
+            textColor=colors.HexColor("#334155"),
         )
     )
     styles.add(
@@ -108,8 +140,8 @@ def build_styles():
             fontName="Helvetica-Bold",
             fontSize=15,
             leading=19,
-            spaceBefore=6 * mm,
-            spaceAfter=3 * mm,
+            spaceBefore=5 * mm,
+            spaceAfter=2.5 * mm,
             textColor=colors.HexColor("#15233C"),
             keepWithNext=True,
         )
@@ -121,7 +153,7 @@ def build_styles():
             fontName="Helvetica-Bold",
             fontSize=12,
             leading=16,
-            spaceBefore=4 * mm,
+            spaceBefore=3.5 * mm,
             spaceAfter=2 * mm,
             textColor=colors.HexColor("#334155"),
             keepWithNext=True,
@@ -147,22 +179,33 @@ def build_styles():
             fontSize=9.8,
             leading=14,
             leftIndent=6 * mm,
-            firstLineIndent=-3 * mm,
-            spaceAfter=1.5 * mm,
+            firstLineIndent=-3.5 * mm,
+            spaceAfter=1.4 * mm,
             textColor=colors.HexColor("#111827"),
         )
     )
     styles.add(
         ParagraphStyle(
-            name="NexoMeta",
+            name="NexoFrontMeta",
             parent=styles["BodyText"],
             fontName="Helvetica",
-            fontSize=9.5,
-            leading=14,
-            leftIndent=5 * mm,
-            rightIndent=5 * mm,
-            spaceAfter=1.5 * mm,
+            fontSize=9.3,
+            leading=13,
+            leftIndent=4 * mm,
+            rightIndent=4 * mm,
+            spaceAfter=1.1 * mm,
             textColor=colors.HexColor("#334155"),
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="NexoLabelLine",
+            parent=styles["BodyText"],
+            fontName="Helvetica",
+            fontSize=9.8,
+            leading=14,
+            spaceAfter=1.2 * mm,
+            textColor=colors.HexColor("#111827"),
         )
     )
     styles.add(
@@ -192,7 +235,7 @@ def add_header_footer(canvas, doc):
     width, height = A4
 
     header = f"NexoDocs | {DOC_SHORT_NAME} | {DOC_ID} v{DOC_VERSION}"
-    footer = f"Pagina {doc.page}"
+    footer = f"Página {doc.page}"
 
     canvas.setStrokeColor(colors.HexColor("#CBD5E1"))
     canvas.setLineWidth(0.5)
@@ -215,8 +258,9 @@ def markdown_to_story(markdown_text: str):
 
     lines = markdown_text.splitlines()
     paragraph_buffer: list[str] = []
-    seen_title = False
-    metadata_block = True
+    front_matter = True
+    h1_seen = False
+    front_subtitle_seen = False
 
     def flush_paragraph():
         nonlocal paragraph_buffer
@@ -236,23 +280,33 @@ def markdown_to_story(markdown_text: str):
 
         if line.strip() == "---":
             flush_paragraph()
-            story.append(Spacer(1, 2 * mm))
-            metadata_block = False
+            # The first separator ends the document front matter. Later
+            # separators are semantic Markdown separators and only add spacing.
+            if front_matter:
+                front_matter = False
+                story.append(Spacer(1, 3 * mm))
+            else:
+                story.append(Spacer(1, 1.5 * mm))
             continue
 
         if line.startswith("# "):
             flush_paragraph()
-            if seen_title:
-                story.append(PageBreak())
-            story.append(Spacer(1, 8 * mm))
+            if h1_seen:
+                story.append(Spacer(1, 4 * mm))
+            else:
+                story.append(Spacer(1, 8 * mm))
             story.append(Paragraph(inline_markdown(line[2:].strip()), styles["NexoTitle"]))
-            seen_title = True
+            h1_seen = True
             continue
 
         if line.startswith("## "):
             flush_paragraph()
-            story.append(Paragraph(inline_markdown(line[3:].strip()), styles["NexoH2"]))
-            metadata_block = False
+            heading = line[3:].strip()
+            if front_matter and not front_subtitle_seen:
+                story.append(Paragraph(inline_markdown(heading), styles["NexoSubtitle"]))
+                front_subtitle_seen = True
+            else:
+                story.append(Paragraph(inline_markdown(heading), styles["NexoH2"]))
             continue
 
         if line.startswith("### "):
@@ -265,34 +319,72 @@ def markdown_to_story(markdown_text: str):
             story.append(Paragraph(inline_markdown(line[2:].strip()), styles["NexoNote"]))
             continue
 
-        if line.startswith("- "):
+        # Support the unordered-list markers used by common Markdown formatters.
+        bullet_match = re.match(r"^\s*[-*+]\s+(.+)$", line)
+        if bullet_match:
             flush_paragraph()
-            item = inline_markdown(line[2:].strip())
+            item = inline_markdown(bullet_match.group(1).strip())
             story.append(Paragraph(f"&bull;&nbsp;&nbsp;{item}", styles["NexoBullet"]))
             continue
 
-        # The document's metadata section uses Markdown bold labels such as
-        # **Versão:** 1.0. Keep each metadata field on its own line.
-        if metadata_block and re.match(r"^\*\*[^*]+:\*\*\s*", line):
+        # Keep label/value lines separate. This fixes front-matter metadata and
+        # contact blocks such as **Responsável:** / **E-mail:** / **Ramal:**.
+        if re.match(r"^\*\*[^*]+:\*\*\s*", line):
             flush_paragraph()
-            story.append(Paragraph(inline_markdown(line), styles["NexoMeta"]))
+            style = styles["NexoFrontMeta"] if front_matter else styles["NexoLabelLine"]
+            story.append(Paragraph(inline_markdown(line), style))
             continue
 
         paragraph_buffer.append(line)
 
     flush_paragraph()
-
     return story
+
+
+def extract_pdf_text(pdf_path: Path) -> tuple[int, str]:
+    reader = PdfReader(str(pdf_path))
+    text = "\n".join((page.extract_text() or "") for page in reader.pages)
+    return len(reader.pages), text
+
+
+def validate_pdf(pdf_path: Path) -> None:
+    pages, text = extract_pdf_text(pdf_path)
+
+    if pages < 1:
+        raise RuntimeError("Validação falhou: o PDF não contém páginas.")
+
+    if len(text.strip()) < 1000:
+        raise RuntimeError(
+            "Validação falhou: pouco texto foi extraído do PDF; ele pode não estar pesquisável."
+        )
+
+    missing = [marker for marker in REQUIRED_TEXT_MARKERS if marker not in text]
+    if missing:
+        raise RuntimeError(
+            "Validação falhou: marcadores obrigatórios ausentes: " + ", ".join(missing)
+        )
+
+    forbidden = [marker for marker in FORBIDDEN_TEXT_MARKERS if marker in text]
+    if forbidden:
+        raise RuntimeError(
+            "Validação falhou: artefatos de Markdown foram parar no PDF: "
+            + ", ".join(forbidden)
+        )
+
+    print("Validação automática: PASS")
+    print(f"Páginas: {pages}")
+    print(f"Caracteres extraídos: {len(text)}")
+    for marker in REQUIRED_TEXT_MARKERS:
+        print(f"Marcador OK: {marker}")
 
 
 def build_pdf(input_path: Path, output_path: Path) -> None:
     if not input_path.exists():
-        raise FileNotFoundError(f"Arquivo de entrada nao encontrado: {input_path}")
+        raise FileNotFoundError(f"Arquivo de entrada não encontrado: {input_path}")
 
     markdown_text = input_path.read_text(encoding="utf-8")
-
     if not markdown_text.strip():
-        raise ValueError("O arquivo Markdown esta vazio.")
+        raise ValueError("O arquivo Markdown está vazio.")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -303,23 +395,25 @@ def build_pdf(input_path: Path, output_path: Path) -> None:
         leftMargin=18 * mm,
         topMargin=20 * mm,
         bottomMargin=18 * mm,
-        title="NexoDocs - Manual Corporativo da Clinica Horizonte",
+        title="NexoDocs - Manual Corporativo da Clínica Horizonte",
         author="NexoDocs - Challenge Alura Agentes",
-        subject="Base de conhecimento corporativa ficticia para sistema RAG",
+        subject="Base de conhecimento corporativa fictícia para sistema RAG",
         creator="NexoDocs PDF Builder",
     )
 
-    story = markdown_to_story(markdown_text)
-
     doc.build(
-        story,
+        markdown_to_story(markdown_text),
         onFirstPage=add_header_footer,
         onLaterPages=add_header_footer,
     )
 
+    validate_pdf(output_path)
+
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Gera o PDF pesquisavel da base de conhecimento NexoDocs.")
+    parser = argparse.ArgumentParser(
+        description="Gera e valida o PDF pesquisável da base de conhecimento NexoDocs."
+    )
     parser.add_argument(
         "--input",
         default="knowledge-base/manual_corporativo_clinica_horizonte_v1.0.md",
@@ -328,7 +422,7 @@ def parse_args():
     parser.add_argument(
         "--output",
         default="knowledge-base/manual_corporativo_clinica_horizonte_v1.0.pdf",
-        help="Caminho do PDF de saida.",
+        help="Caminho do PDF de saída.",
     )
     return parser.parse_args()
 
@@ -340,7 +434,7 @@ def main():
 
     build_pdf(input_path, output_path)
 
-    print("PDF gerado com sucesso:")
+    print("PDF gerado e validado com sucesso:")
     print(output_path.resolve())
 
 
