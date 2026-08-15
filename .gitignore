@@ -1,0 +1,54 @@
+# ==========================================
+# NexoDocs - Git Ignore
+# ==========================================
+
+# Secrets / Environment
+.env
+.env.*
+!.env.example
+
+# API keys / Certificates
+*.key
+*.pem
+*.p12
+*.pfx
+credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node.js
+node_modules/
+
+# n8n local data
+.n8n/
+n8n_data/
+
+# Qdrant local data
+qdrant_data/
+
+# Docker overrides
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE
+.vscode/
+.idea/
+
+# Operating System
+.DS_Store
+Thumbs.db
+
+# OCI / SSH private material
+ssh-key-*
+*.private
