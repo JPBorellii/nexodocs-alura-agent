@@ -1,0 +1,6 @@
+document_id,document_version,status,area,responsavel,email,ramal,escopo
+CH-DIR-001,1.0,vigente,"Coordenação de Atendimento","Mariana Lopes","atendimento@clinicahorizonte.example",201,"agenda; reagendamentos excepcionais; no-show; atendimento ao paciente; reclamações operacionais"
+CH-DIR-001,1.0,vigente,"Financeiro","Ricardo Almeida","financeiro@clinicahorizonte.example",301,"valores; pagamentos; faturamento; dúvidas financeiras; tabela vigente de preços"
+CH-DIR-001,1.0,vigente,"Recursos Humanos","Fernanda Costa","rh@clinicahorizonte.example",401,"assuntos relacionados aos colaboradores"
+CH-DIR-001,1.0,vigente,"Tecnologia da Informação","Lucas Martins","ti@clinicahorizonte.example",501,"contas; acessos; sistemas; indisponibilidades; incidentes de segurança tecnológica"
+CH-DIR-001,1.0,vigente,"Proteção de Dados","Camila Ribeiro","privacidade@clinicahorizonte.example",601,"privacidade; proteção de dados; dúvidas relacionadas à LGPD; incidentes envolvendo dados pessoais"
