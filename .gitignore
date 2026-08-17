@@ -52,3 +52,5 @@ Thumbs.db
 # OCI / SSH private material
 ssh-key-*
 *.private
+# Local temporary workspace
+/tmp/
