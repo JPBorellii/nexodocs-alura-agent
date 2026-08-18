@@ -177,8 +177,8 @@ flowchart LR
             WF04[WF04 Private Demo API]
 
             NGINX --> FRONT
-            NGINX -->|POST /api/chat| WF04
-            WF04 --> N8N
+            NGINX -->|POST /api/chat| N8N
+            N8N --> WF04
         end
 
         subgraph VM2[VM 2 — Vetores]
