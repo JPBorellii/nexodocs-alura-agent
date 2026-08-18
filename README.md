@@ -67,6 +67,39 @@ Além do núcleo RAG, o projeto inclui:
 
 ---
 
+## Para avaliação do Challenge
+
+Este repositório foi preparado para permitir a **avaliação integral do projeto diretamente pelo GitHub**, sem depender da publicação de credenciais ou da disponibilidade permanente de um endpoint temporário.
+
+Os principais artefatos de avaliação estão organizados da seguinte forma:
+
+- **código e workflows n8n:** `workflows/`;
+- **base de conhecimento PDF e CSV:** `knowledge-base/`;
+- **golden dataset:** `tests/rag_golden_dataset_v1.csv`;
+- **evidências técnicas:** `docs/evidencias/`;
+- **catálogo e integridade das evidências:** `docs/evidencias/MANIFEST.md`;
+- **arquitetura, execução, resultados e decisões de engenharia:** este `README.md`.
+
+A aplicação foi **implantada na Oracle Cloud Infrastructure e validada externamente por HTTPS**. As evidências versionadas neste repositório demonstram, entre outros pontos:
+
+- infraestrutura OCI;
+- ingestão e indexação documental;
+- collections Qdrant;
+- recuperação semântica;
+- execução do agente RAG;
+- resultado do Golden Dataset;
+- frontend executado externamente;
+- requisição HTTPS chegando ao webhook;
+- resposta factual grounded com fonte;
+- fallback determinístico;
+- execução efetiva da ferramenta `buscar_base_corporativa`.
+
+A interface interativa utilizada na validação externa é protegida e utiliza **Cloudflare Quick Tunnel apenas como mecanismo temporário de demonstração**. Por segurança, a URL temporária e as credenciais de acesso **não são publicadas no repositório**.
+
+> A avaliação do projeto não depende do acesso à demo temporária: código, documentação, resultados e evidências do deploy e do funcionamento estão versionados neste repositório.
+
+---
+
 ## Visão geral
 
 Em ambientes corporativos, informações importantes costumam ficar espalhadas em manuais, políticas, PDFs, planilhas e outros documentos. O NexoDocs foi construído para reduzir:
@@ -882,9 +915,13 @@ Foram executados com sucesso:
 
 ---
 
-# Demo privada de avaliação
+# Demo privada validada externamente
 
-Foi criada uma interface web responsiva para permitir que o avaliador consulte o NexoDocs sem receber acesso ao painel administrativo do n8n.
+Foi criada e validada uma interface web responsiva para comprovar o funcionamento **end-to-end** do NexoDocs fora da sessão administrativa.
+
+A demo utiliza autenticação na camada Nginx e não concede acesso ao editor do n8n ou ao banco vetorial. Sua finalidade é demonstrar tecnicamente o caminho completo entre interface, API, agente, recuperação RAG e resposta fundamentada.
+
+Por segurança, a URL temporária e as credenciais da demo não são publicadas no GitHub. O funcionamento externo está documentado por evidências sanitizadas e versionadas neste repositório, permitindo verificar o deploy sem transformar o endpoint temporário em um serviço público permanente.
 
 ## Controles da demo
 
